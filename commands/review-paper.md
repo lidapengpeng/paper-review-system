@@ -21,7 +21,7 @@ allowed-tools:
 
 # 自动化学术论文审稿
 
-执行专业的学术论文审稿，按 5 个阶段完成多维度评审并输出结构化评审报告。支持按目标会议（CVPR/NeurIPS/ICML/ICLR/ECCV/ICCV/ACL/AAAI/KDD/MICCAI 等）动态调整评审策略。
+执行专业的学术论文审稿，按 4 个阶段完成多维度评审并输出结构化评审报告。支持按目标会议（CVPR/NeurIPS/ICML/ICLR/ECCV/ICCV/ACL/AAAI/KDD/MICCAI 等）动态调整评审策略。
 
 ## 参数解析
 
@@ -138,25 +138,7 @@ allowed-tools:
    - 架构细节（层数、卷积核大小）
    - 优化器和超参数
 
-## Phase 4：伦理与合规审查
-
-根据目标会议要求进行伦理合规检查：
-
-1. **通用检查**：
-   - 双盲匿名化是否合规（论文中是否有去匿名化信息）
-   - 是否有 Limitations section
-   - 人类受试者研究是否有 IRB 批准
-2. **会议特定检查**（参见 `references/venue-profiles.md`）：
-   - NeurIPS: Broader Impact Statement 质量
-   - ACL: Responsible NLP Checklist 完整性, AI 生成内容声明
-   - MICCAI: 临床伦理, 数据隐私, 患者同意
-   - AAAI: AI 安全和社会影响讨论
-3. **数据集伦理**：
-   - 数据来源是否合规
-   - 是否有偏见讨论
-   - 隐私保护措施
-
-## Phase 5：报告生成
+## Phase 4：报告生成
 
 合并所有阶段输出为标准评审格式。
 
@@ -168,7 +150,6 @@ allowed-tools:
 - **速读印象**（来自 Phase 1.5）
 - **多维度详细评审**（来自 Phase 2）
 - **代码审查**（来自 Phase 3，如适用）
-- **伦理合规检查**（来自 Phase 4）
 - **审稿人置信度**（1-5）
 - **会议特定的评分映射**（如指定了 venue）
 - **Meta-Review 级别的总结**
