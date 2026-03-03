@@ -1,7 +1,7 @@
 ---
 name: review-paper
-description: 自动化学术论文审稿。提供 PDF 路径即可启动完整审稿流程。
-argument-hint: "<pdf_path> [--with-code <code_dir>] [--with-supplement <sup_pdf>]"
+description: 自动化学术论文审稿。提供 PDF 路径即可启动完整审稿流程，支持按目标会议适配评审标准。
+argument-hint: "<pdf_path> [--venue <conference>] [--with-code <code_dir>] [--with-supplement <sup_pdf>]"
 allowed-tools:
   - Read
   - Write
@@ -21,16 +21,25 @@ allowed-tools:
 
 # 自动化学术论文审稿
 
-执行专业的学术论文审稿，按 4 个阶段完成 8 维度评审并输出结构化评审报告。
+执行专业的学术论文审稿，按 5 个阶段完成多维度评审并输出结构化评审报告。支持按目标会议（CVPR/NeurIPS/ICML/ICLR/ECCV/ICCV/ACL/AAAI/KDD/MICCAI 等）动态调整评审策略。
 
 ## 参数解析
 
 解析用户提供的参数：
 - `<pdf_path>`：论文 PDF 路径（必须）
+- `--venue <conference>`：目标会议/期刊（可选，如 CVPR, NeurIPS, ACL 等）
 - `--with-code <code_dir>`：源代码目录路径（可选，启用代码审查）
 - `--with-supplement <sup_pdf>`：补充材料 PDF 路径（可选）
 
-确认 PDF 文件存在后开始审稿流程。
+如未指定 `--venue`，询问用户目标投稿会议。确认 PDF 文件存在后开始审稿流程。
+
+## 会议适配策略
+
+根据 `--venue` 参数加载对应的评审策略（参见 `references/venue-profiles.md`）：
+- 调整评审维度权重（如 ICML 提高理论权重，CVPR 提高视觉效果权重）
+- 加载会议特定的 Checklist 检查项
+- 使用会议对应的评分标准和接收率参考
+- 设定会议特定的基线和数据集期望
 
 ## Phase 1：论文解析
 
@@ -44,7 +53,27 @@ allowed-tools:
 
 保存所有提取内容供后续阶段使用。
 
-## Phase 2：并行 8 维度评审
+## Phase 1.5：速读评估（Quick Assessment）
+
+在深度评审之前，进行全局质量速读判断（模拟资深审稿人的第一遍阅读）：
+
+1. **论文类型识别**：理论型 / 实验型 / 应用型 / 系统型
+2. **30 秒质量信号检测**：
+   - 图表密度和质量（图表多且清晰 = 正面信号）
+   - 参考文献时效性（近 2 年论文占比）
+   - 论文结构完整性（是否有 Limitations, Broader Impact 等）
+   - 数学符号规范度
+3. **会议 Checklist 合规检查**（如指定了 venue）：
+   - NeurIPS: Reproducibility Checklist, Broader Impact Statement
+   - ACL: Responsible NLP Checklist (Section A-E), Limitations section
+   - MICCAI: Ethics/IRB 声明, 临床价值说明
+   - ICLR: 公开审稿格式合规
+   - 通用: 匿名化检查（双盲是否合规）
+4. **初步印象输出**：论文类型、质量水位预估、审查重点建议
+
+此阶段的输出用于指导 Phase 2 的 Agent 设定审查侧重点。
+
+## Phase 2：并行多维度评审
 
 启动并行 Agent 进行以下评审维度，每个 Agent 接收解析后的论文文本和相关数据。
 
@@ -63,14 +92,22 @@ allowed-tools:
 - 公式之间是否有逻辑矛盾
 - 视觉检查提取的公式图像
 
-### Agent C：实验（维度 4）
+### Agent C：实验 + 统计严谨性（维度 4）
 使用提取的表格和 SOTA 数据评估：
 - 调用 `academic_search.find_competing_methods` 获取 SOTA 排行榜和竞争方法
 - 调用 `academic_search.get_sota_results` 获取每个主要基准的排行数据
 - 基线是否最新？与 SOTA 排行榜对比
-- 比较是否公平？（相同骨干网络、相同训练数据？）
-- 消融实验是否完整？（所有模块组合？）
-- 结果是单次运行还是多次平均？
+- **实验公平性深度分析**：
+  - 比较条件是否一致（相同骨干网络、训练数据、数据增强、epoch）
+  - 表格脚注中是否隐藏了有利条件
+  - 是否使用了官方基线实现和推荐超参
+  - 是否 cherry-pick 了有利的对比设置
+- 消融实验是否完整？（所有模块组合？消融数值加和是否合理？）
+- **统计严谨性检查**：
+  - 结果是单次运行还是多次平均？
+  - 是否有 error bars / 标准差 / 置信区间？
+  - 性能提升是否具有统计显著性？
+  - 对于 NLP 论文：是否有 bootstrap test / Bonferroni 校正？
 - 是否报告了效率指标（参数量、FLOPs、FPS）？
 - 视觉检查提取的结果表格图像
 
@@ -101,11 +138,39 @@ allowed-tools:
    - 架构细节（层数、卷积核大小）
    - 优化器和超参数
 
-## Phase 4：报告生成
+## Phase 4：伦理与合规审查
 
-合并所有 Agent 输出为标准评审格式。
+根据目标会议要求进行伦理合规检查：
+
+1. **通用检查**：
+   - 双盲匿名化是否合规（论文中是否有去匿名化信息）
+   - 是否有 Limitations section
+   - 人类受试者研究是否有 IRB 批准
+2. **会议特定检查**（参见 `references/venue-profiles.md`）：
+   - NeurIPS: Broader Impact Statement 质量
+   - ACL: Responsible NLP Checklist 完整性, AI 生成内容声明
+   - MICCAI: 临床伦理, 数据隐私, 患者同意
+   - AAAI: AI 安全和社会影响讨论
+3. **数据集伦理**：
+   - 数据来源是否合规
+   - 是否有偏见讨论
+   - 隐私保护措施
+
+## Phase 5：报告生成
+
+合并所有阶段输出为标准评审格式。
 
 报告模板参见 Skill 中的 `references/review-template.md`。
 评分标准参见 `references/scoring-guide.md`。
+会议特定标准参见 `references/venue-profiles.md`。
+
+报告中应包含：
+- **速读印象**（来自 Phase 1.5）
+- **多维度详细评审**（来自 Phase 2）
+- **代码审查**（来自 Phase 3，如适用）
+- **伦理合规检查**（来自 Phase 4）
+- **审稿人置信度**（1-5）
+- **会议特定的评分映射**（如指定了 venue）
+- **Meta-Review 级别的总结**
 
 将报告保存到 PDF 同目录下，文件名 `Review_Report_[论文名].md`。
