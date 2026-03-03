@@ -92,11 +92,18 @@ allowed-tools:
 - 公式之间是否有逻辑矛盾
 - 视觉检查提取的公式图像
 
-### Agent C：实验 + 统计严谨性（维度 4）
+### Agent C：实验 + 统计严谨性 + 竞品论文对比（维度 4）
 使用提取的表格和 SOTA 数据评估：
 - 调用 `academic_search.find_competing_methods` 获取 SOTA 排行榜和竞争方法
 - 调用 `academic_search.get_sota_results` 获取每个主要基准的排行数据
 - 基线是否最新？与 SOTA 排行榜对比
+- **竞品论文深度对比**（最近 12 个月内的最相关论文）：
+  1. 从论文中提取核心 task（如 "change detection"）和 dataset（如 "LEVIR-CD"）
+  2. 调用 `academic_search.search_related_work` 搜索最近 12 个月内的相关论文
+  3. 调用 `academic_search.find_competing_methods` 匹配相同 task+dataset 的竞争方法
+  4. 使用 WebSearch 补充搜索：`"{task}" "{dataset}" {current_year}` 获取最新结果
+  5. 生成竞品对比表：方法名、发表时间、核心技术路线、性能指标、与本文的差异
+  6. 评估：论文对比的基线是否覆盖了这些最新竞品？遗漏了哪些？
 - **实验公平性深度分析**：
   - 比较条件是否一致（相同骨干网络、训练数据、数据增强、epoch）
   - 表格脚注中是否隐藏了有利条件
@@ -119,12 +126,18 @@ allowed-tools:
 - 实现细节是否足以复现
 - 结论是否充分（局限性、未来工作）
 
-### Agent E：相关工作 + 参考文献审计（维度 7）
-使用 Academic Search MCP 工具：
+### Agent E：相关工作 + 参考文献审计 + 遗漏检测（维度 7）
+使用 Academic Search MCP 工具 + Web 搜索：
 1. 调用 `academic_search.verify_references_batch` 验证所有参考文献
 2. 调用 `academic_search.find_missing_citations` 检测遗漏引用
-3. 检查领域内近年关键工作是否被引用
-4. 验证引用是否存在错配（错误的论文被分配到错误的名称）
+3. **主动搜索最近 12 个月的高引论文**：
+   - 从论文中提取 3-5 个核心关键词
+   - 使用 `academic_search.search_related_work` 搜索（year_range 设为最近 12 个月）
+   - 使用 WebSearch 补充搜索 arXiv 和 Google Scholar 上的最新预印本
+   - 按引用数排序，识别论文是否遗漏了高影响力的最新工作
+4. 检查领域内近年关键工作是否被引用
+5. 验证引用是否存在错配（错误的论文被分配到错误的名称）
+6. **输出竞品论文清单**：列出最相关的 5-10 篇最新论文，标注论文是否已引用
 
 ## Phase 3：代码审查（可选）
 
