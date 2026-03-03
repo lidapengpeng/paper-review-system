@@ -43,35 +43,68 @@ allowed-tools:
 
 ## Phase 1：论文解析
 
-使用 Paper Parser MCP 工具提取结构化内容：
+**方案 A（首选）：使用 Paper Parser MCP**
 
 1. 调用 `paper_parser.parse_paper` 解析 PDF 为 Markdown
 2. 调用 `paper_parser.extract_references` 提取参考文献列表
 3. 调用 `paper_parser.extract_figures_and_tables` 提取图表和公式为 PNG 图像
 4. 如有补充材料 PDF，同样解析
-5. 使用 Read 工具读取提取的图表图像，进行视觉分析（架构图、结果表格）
+5. 使用 Read 工具读取提取的图表图像，进行视觉分析
+
+**方案 B（Fallback）：MCP 不可用时直接读取 PDF**
+
+如果 Paper Parser MCP Server 未启动或报错：
+1. 使用 Read 工具直接读取 PDF 文件（Claude 支持多模态 PDF 阅读）
+2. 逐页读取，每次最多 20 页：`Read(pdf_path, pages="1-10")` 然后 `Read(pdf_path, pages="11-20")`
+3. 视觉分析图表和公式（直接从 PDF 页面图像分析）
+4. 手动从文本中提取参考文献列表
+5. 此模式下图表提取为 PNG 的功能不可用，但视觉分析仍然有效
+
+**自动检测逻辑**：先尝试调用 `paper_parser.ping()`，如成功则用方案 A，如超时或报错则自动切换方案 B 并通知用户。
 
 保存所有提取内容供后续阶段使用。
 
 ## Phase 1.5：速读评估（Quick Assessment）
 
-在深度评审之前，进行全局质量速读判断（模拟资深审稿人的第一遍阅读）：
+在深度评审之前，进行全局质量速读判断（模拟资深审稿人的第一遍阅读）。
 
-1. **论文类型识别**：理论型 / 实验型 / 应用型 / 系统型
-2. **30 秒质量信号检测**：
-   - 图表密度和质量（图表多且清晰 = 正面信号）
-   - 参考文献时效性（近 2 年论文占比）
-   - 论文结构完整性（是否有 Limitations, Broader Impact 等）
-   - 数学符号规范度
-3. **会议 Checklist 合规检查**（如指定了 venue）：
+**自动化检查**：运行速读评估脚本获取量化指标：
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/quick-assess.py <parsed_text_file>
+```
+
+脚本自动检测以下指标：
+
+1. **论文类型识别**：理论型 / 实验型 / 应用型 / 系统型（基于关键词频率）
+2. **引用时效性统计**：
+   - 近 2 年论文占比（≥25% 为良好，15-25% 偏旧，<15% 严重过时）
+   - 中位引用年份
+   - 年份分布直方图
+3. **结构完整性检查**：自动检测是否包含 Abstract, Introduction, Related Work, Method, Experiments, Conclusion, Limitations, Broader Impact, References
+4. **匿名化合规检查**：检测 GitHub 链接、"our previous work" 表述、代码公开声明
+5. **统计严谨性检测**：自动扫描 ± 符号、error bars、多次运行、统计检验、置信区间、随机种子
+6. **效率指标检测**：自动扫描 Params、FLOPs、FPS、内存、训练时间
+7. **会议 Checklist 合规检查**（如指定了 venue）：
    - NeurIPS: Reproducibility Checklist, Broader Impact Statement
    - ACL: Responsible NLP Checklist (Section A-E), Limitations section
    - MICCAI: Ethics/IRB 声明, 临床价值说明
    - ICLR: 公开审稿格式合规
-   - 通用: 匿名化检查（双盲是否合规）
-4. **初步印象输出**：论文类型、质量水位预估、审查重点建议
 
-此阶段的输出用于指导 Phase 2 的 Agent 设定审查侧重点。
+**输出**：初步印象 + 各项量化指标 + 审查重点建议，指导 Phase 2 的 Agent 设定侧重点。
+
+## 审稿人视角加载
+
+根据 `--venue` 参数加载对应会议的资深审稿人视角文档（如存在）：
+- CVPR/ICCV → 读取 `docs/reviewer-perspectives/01-cvpr-reviewer.md` 或 `03-iccv-reviewer.md`
+- NeurIPS → 读取 `docs/reviewer-perspectives/02-neurips-reviewer.md`
+- ICML → 读取 `docs/reviewer-perspectives/05-icml-reviewer.md`
+- ACL → 读取 `docs/reviewer-perspectives/07-acl-reviewer.md`
+- 其他会议类推
+
+将审稿人视角中的「最看重的维度」「该会议的审稿文化」「独特审稿技巧」融入后续 Phase 2 的评审过程。例如：
+- CVPR 审稿人强调「视觉结果质量」→ Agent 需重点分析可视化结果
+- ICML 审稿人强调「证明严谨性」→ Agent B 需逐行检查证明
+- ACL 审稿人强调「LLM 基线」→ Agent C 需检查是否包含 LLM 对比
 
 ## Phase 2：并行多维度评审
 
