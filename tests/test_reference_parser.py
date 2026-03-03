@@ -41,7 +41,7 @@ def test_extract_references_on_real_pdf():
     """Test on the actual RaCMamba paper."""
     import os
 
-    pdf_path = "/Users/dapeng/Desktop/1575/Submission_1575.pdf"
+    pdf_path = os.environ.get("TEST_PDF_PATH", "tests/fixtures/sample.pdf")
     if not os.path.exists(pdf_path):
         pytest.skip("Test PDF not available")
 

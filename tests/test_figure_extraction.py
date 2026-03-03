@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-TEST_PDF = "/Users/dapeng/Desktop/1575/Submission_1575.pdf"
+TEST_PDF = os.environ.get("TEST_PDF_PATH", "tests/fixtures/sample.pdf")
 
 
 @pytest.mark.skipif(not os.path.exists(TEST_PDF), reason="Test PDF not available")

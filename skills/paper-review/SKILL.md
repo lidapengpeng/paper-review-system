@@ -1,5 +1,5 @@
 ---
-name: 学术论文审稿
+name: paper-review
 description: >-
   This skill should be used when the user asks to "审稿", "review paper",
   "审阅论文", "评审论文", "paper review", "检查论文质量",
@@ -8,7 +8,7 @@ description: >-
   quality across multiple dimensions including novelty, technical soundness,
   experiments, and writing quality. Supports venue-specific review for
   CVPR, NeurIPS, ICML, ICLR, ECCV, ICCV, ACL, AAAI, KDD, MICCAI and more.
-version: 2.0.0
+version: 2.2.0
 ---
 
 # 学术论文自动化审稿
