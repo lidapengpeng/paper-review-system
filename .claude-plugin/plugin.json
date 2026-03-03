@@ -1,7 +1,7 @@
 {
   "name": "paper-review-system",
-  "version": "1.0.0",
-  "description": "Automated academic paper review system with PDF parsing, reference verification, SOTA comparison, and 8-dimension scoring",
+  "version": "2.2.0",
+  "description": "Automated academic paper review system with venue-adaptive review, competitive paper analysis, rebuttal assistance, PDF parsing, reference verification, SOTA comparison, and 8-dimension scoring powered by 10 top-conference reviewer methodologies",
   "author": {
     "name": "DaPeng",
     "email": "li18838956649@gmail.com",

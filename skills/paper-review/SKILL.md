@@ -74,14 +74,27 @@ version: 2.0.0
 5. **统计意识**：关注实验的统计严谨性
 6. **可验证**：参考文献和 SOTA 使用 API 自动验证
 
+## 完整命令列表
+
+| 命令 | 用途 |
+|------|------|
+| `/review-paper` | 完整审稿（4 阶段 + 速读 + 竞品对比） |
+| `/pre-screen` | 快速预筛选（< 1 分钟，量化质量信号） |
+| `/rebuttal` | Rebuttal 辅助（逐条回复 + 修改验证） |
+
 ## 附属资源
 
 ### 参考文件
 - **`references/review-template.md`** - 评审报告完整模板
 - **`references/scoring-guide.md`** - 评分标准和接收建议指南
-- **`references/venue-profiles.md`** - 10 个顶会的审稿策略配置（新增）
+- **`references/venue-profiles.md`** - 15+ 会议/期刊的审稿策略配置
+- **`references/venue-review-criteria.md`** - 各会议 Agent 审稿核心要点精粹（v2.2 新增）
+
+### 自动化脚本
+- **`scripts/quick-assess.py`** - Phase 1.5 速读自动化（6 项检查）
+- **`scripts/check-deps.sh`** - 依赖安装检查
 
 ### 审稿人视角文档
-`docs/reviewer-perspectives/` 目录包含 10 位顶会资深审稿人的详细方法论：
+`docs/reviewer-perspectives/` 目录包含 10 位顶会资深审稿人的详细方法论（162KB）：
 - `01-cvpr-reviewer.md` ~ `10-miccai-reviewer.md`
 - `00-synthesis-and-upgrade-plan.md` - 综合分析与升级方案
