@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "paper-parser": {
+      "command": "python3",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/paper-parser-mcp/server.py"],
+      "env": {}
+    },
+    "academic-search": {
+      "command": "python3",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/academic-search-mcp/server.py"],
+      "env": {
+        "CROSSREF_MAILTO": "${CROSSREF_MAILTO}",
+        "SEMANTIC_SCHOLAR_API_KEY": "${SEMANTIC_SCHOLAR_API_KEY}"
+      }
+    }
+  }
+}

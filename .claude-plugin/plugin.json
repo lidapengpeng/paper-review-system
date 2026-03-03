@@ -1,0 +1,12 @@
+{
+  "name": "paper-review-system",
+  "version": "1.0.0",
+  "description": "Automated academic paper review system with PDF parsing, reference verification, SOTA comparison, and 8-dimension scoring",
+  "author": {
+    "name": "DaPeng",
+    "email": "li18838956649@gmail.com",
+    "url": "https://github.com/lidapengpeng"
+  },
+  "repository": "https://github.com/lidapengpeng/paper-review-system",
+  "license": "MIT"
+}

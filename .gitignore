@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.env
+/tmp/
+*.DS_Store
+.pytest_cache/
+.claude/*.local.md
