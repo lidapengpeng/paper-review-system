@@ -34,7 +34,9 @@ async def verify_single_reference(ref: dict) -> dict:
 
     if isinstance(crossref_result, Exception):
         crossref_result = {"found": False, "error": str(crossref_result)}
+    dblp_error = None
     if isinstance(dblp_results, Exception):
+        dblp_error = str(dblp_results)
         dblp_results = []
 
     all_discrepancies = crossref_result.get("discrepancies", [])
@@ -64,7 +66,7 @@ async def verify_single_reference(ref: dict) -> dict:
     else:
         status = "not_found"
 
-    return {
+    result = {
         "status": status,
         "title": title,
         "crossref": crossref_result,
@@ -72,6 +74,9 @@ async def verify_single_reference(ref: dict) -> dict:
         "discrepancies": all_discrepancies,
         "citation_count": citation_count,
     }
+    if dblp_error:
+        result["dblp_error"] = dblp_error
+    return result
 
 
 async def verify_references_batch(refs: list[dict]) -> dict:

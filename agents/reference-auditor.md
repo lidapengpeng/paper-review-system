@@ -27,10 +27,10 @@ tools:
   - Write
   - Bash
   - WebSearch
-  - mcp__academic-search__verify_reference
-  - mcp__academic-search__verify_references_batch
-  - mcp__academic-search__find_missing_citations
-  - mcp__academic-search__search_related_work
+  - mcp__plugin_paper-review-system_academic-search__verify_reference
+  - mcp__plugin_paper-review-system_academic-search__verify_references_batch
+  - mcp__plugin_paper-review-system_academic-search__find_missing_citations
+  - mcp__plugin_paper-review-system_academic-search__search_related_work
 ---
 
 # 参考文献审计 Agent

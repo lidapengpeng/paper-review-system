@@ -29,9 +29,9 @@ tools:
   - Grep
   - WebSearch
   - WebFetch
-  - mcp__academic-search__find_competing_methods
-  - mcp__academic-search__get_sota_results
-  - mcp__academic-search__search_related_work
+  - mcp__plugin_paper-review-system_academic-search__find_competing_methods
+  - mcp__plugin_paper-review-system_academic-search__get_sota_results
+  - mcp__plugin_paper-review-system_academic-search__search_related_work
 ---
 
 # 技术审查 Agent

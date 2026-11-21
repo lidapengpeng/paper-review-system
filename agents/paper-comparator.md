@@ -29,10 +29,10 @@ tools:
   - Grep
   - WebSearch
   - WebFetch
-  - mcp__academic-search__search_related_work
-  - mcp__academic-search__find_competing_methods
-  - mcp__academic-search__get_sota_results
-  - mcp__academic-search__find_missing_citations
+  - mcp__plugin_paper-review-system_academic-search__search_related_work
+  - mcp__plugin_paper-review-system_academic-search__find_competing_methods
+  - mcp__plugin_paper-review-system_academic-search__get_sota_results
+  - mcp__plugin_paper-review-system_academic-search__find_missing_citations
 ---
 
 # 竞品论文对比 Agent

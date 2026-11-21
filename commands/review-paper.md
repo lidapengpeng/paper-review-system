@@ -15,8 +15,8 @@ allowed-tools:
   - TaskCreate
   - TaskUpdate
   - TaskList
-  - mcp__paper-parser__*
-  - mcp__academic-search__*
+  - mcp__plugin_paper-review-system_paper-parser__*
+  - mcp__plugin_paper-review-system_academic-search__*
 ---
 
 # 自动化学术论文审稿
