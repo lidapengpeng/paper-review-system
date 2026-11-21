@@ -43,7 +43,14 @@ async def search_publication(query: str, max_results: int = 5) -> list[dict]:
 
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await _request_with_retry(client, f"{BASE_URL}/publ/api", params)
-        data = resp.json()
+        try:
+            data = resp.json()
+        except ValueError as e:
+            # e.g. HTTP 202 + text/html when dblp serves an anti-bot challenge page
+            raise RuntimeError(
+                f"DBLP returned a non-JSON response (HTTP {resp.status_code}, "
+                f"{resp.headers.get('content-type', 'unknown content-type')})"
+            ) from e
 
     results = []
     hits = data.get("result", {}).get("hits", {}).get("hit", [])

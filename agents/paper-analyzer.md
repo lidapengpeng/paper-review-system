@@ -26,10 +26,10 @@ tools:
   - Write
   - Bash
   - Glob
-  - mcp__paper-parser__parse_paper
-  - mcp__paper-parser__extract_references
-  - mcp__paper-parser__extract_figures_and_tables
-  - mcp__paper-parser__get_paper_metadata
+  - mcp__plugin_paper-review-system_paper-parser__parse_paper
+  - mcp__plugin_paper-review-system_paper-parser__extract_references
+  - mcp__plugin_paper-review-system_paper-parser__extract_figures_and_tables
+  - mcp__plugin_paper-review-system_paper-parser__get_paper_metadata
 ---
 
 # 论文解析 Agent

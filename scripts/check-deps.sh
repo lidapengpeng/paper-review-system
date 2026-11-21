@@ -5,15 +5,17 @@
 MISSING=()
 
 check_package() {
-    python3 -c "import $1" 2>/dev/null
+    python3 -c "import $1" >/dev/null 2>&1
     if [ $? -ne 0 ]; then
         MISSING+=("$2")
     fi
 }
 
 # Check core dependencies
-check_package "mcp" "mcp>=1.0.0"
-check_package "pymupdf" "pymupdf4llm>=0.2.9"
+# Import the exact modules the servers use: mcp 2.x removed mcp.server.fastmcp,
+# and pymupdf4llm 2.0 is an empty placeholder package (no importable module).
+check_package "mcp.server.fastmcp" "mcp>=1.0.0,<2"
+check_package "pymupdf4llm" "pymupdf4llm>=0.2.9,<2"
 check_package "pydantic" "pydantic>=2.0"
 check_package "httpx" "httpx>=0.27.0"
 check_package "PIL" "Pillow>=10.0"
@@ -35,9 +37,9 @@ else
     done
     echo ""
     echo "To install all dependencies, run:"
-    echo "   pip install -r \${CLAUDE_PLUGIN_ROOT}/requirements.txt"
+    echo "   pip install -r \"${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}/requirements.txt\""
     echo ""
     echo "Or install individually:"
-    echo "   pip install ${MISSING[*]}"
+    echo "   pip install$(printf ' "%s"' "${MISSING[@]}")"
     exit 1
 fi

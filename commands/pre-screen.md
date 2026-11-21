@@ -7,7 +7,7 @@ allowed-tools:
   - Bash
   - Grep
   - AskUserQuestion
-  - mcp__paper-parser__*
+  - mcp__plugin_paper-review-system_paper-parser__*
 ---
 
 # 论文快速预筛选

@@ -13,8 +13,8 @@ allowed-tools:
   - WebFetch
   - WebSearch
   - AskUserQuestion
-  - mcp__paper-parser__*
-  - mcp__academic-search__*
+  - mcp__plugin_paper-review-system_paper-parser__*
+  - mcp__plugin_paper-review-system_academic-search__*
 ---
 
 # Rebuttal 辅助

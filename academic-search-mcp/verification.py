@@ -1,9 +1,21 @@
 """Reference verification using multiple APIs."""
 import asyncio
 
+from apis.crossref import _similarity, first_author_conflict, year_status
 from apis.crossref import verify_paper as crossref_verify
 from apis.dblp import search_publication as dblp_search
 from apis.semantic_scholar import search_papers as s2_search
+
+
+def _s2_confirms(ref: dict, candidate: dict | None) -> bool:
+    """True if a Semantic Scholar hit is clearly the referenced work."""
+    if not candidate or not candidate.get("title"):
+        return False
+    if _similarity(ref.get("title", ""), candidate["title"]) < 0.9:
+        return False
+    if year_status(ref.get("year"), candidate.get("year")) == "conflict":
+        return False
+    return not first_author_conflict(ref.get("authors"), candidate.get("authors"))
 
 
 async def verify_single_reference(ref: dict) -> dict:
@@ -34,29 +46,44 @@ async def verify_single_reference(ref: dict) -> dict:
 
     if isinstance(crossref_result, Exception):
         crossref_result = {"found": False, "error": str(crossref_result)}
+    dblp_error = None
     if isinstance(dblp_results, Exception):
+        dblp_error = str(dblp_results)
         dblp_results = []
 
-    all_discrepancies = crossref_result.get("discrepancies", [])
+    # Copy: appending DBLP notes must not mutate crossref_result["discrepancies"]
+    crossref_discrepancies = list(crossref_result.get("discrepancies", []))
+    dblp_discrepancies = []
 
     # Check DBLP for venue confirmation
     if dblp_results and ref.get("venue"):
         dblp_venue = dblp_results[0].get("venue", "")
         if dblp_venue and ref["venue"].lower() not in dblp_venue.lower():
-            all_discrepancies.append(
+            dblp_discrepancies.append(
                 f"DBLP venue: '{dblp_venue}' (paper says '{ref['venue']}')"
             )
 
-    # Get citation count from Semantic Scholar
+    # Get citation count from Semantic Scholar (also fallback evidence below)
     citation_count = None
+    s2_top = None
     try:
         s2_results = await s2_search(title, limit=1)
         if s2_results:
-            citation_count = s2_results[0].get("citationCount", 0)
+            s2_top = s2_results[0]
+            citation_count = s2_top.get("citationCount", 0)
     except Exception:
         pass
 
     found = crossref_result.get("found")
+    matched_by = "crossref" if found else None
+    if not found and _s2_confirms(ref, s2_top):
+        # Many CS papers (NeurIPS, ICLR, arXiv) have no CrossRef DOI but are
+        # indexed by Semantic Scholar; a confident S2 match counts as found.
+        found = True
+        matched_by = "semantic_scholar"
+        crossref_discrepancies = []
+
+    all_discrepancies = crossref_discrepancies + dblp_discrepancies
     if found and not all_discrepancies:
         status = "verified"
     elif found and all_discrepancies:
@@ -64,7 +91,7 @@ async def verify_single_reference(ref: dict) -> dict:
     else:
         status = "not_found"
 
-    return {
+    result = {
         "status": status,
         "title": title,
         "crossref": crossref_result,
@@ -72,6 +99,13 @@ async def verify_single_reference(ref: dict) -> dict:
         "discrepancies": all_discrepancies,
         "citation_count": citation_count,
     }
+    if matched_by:
+        result["matched_by"] = matched_by
+    if matched_by == "semantic_scholar":
+        result["semantic_scholar"] = s2_top
+    if dblp_error:
+        result["dblp_error"] = dblp_error
+    return result
 
 
 async def verify_references_batch(refs: list[dict]) -> dict:

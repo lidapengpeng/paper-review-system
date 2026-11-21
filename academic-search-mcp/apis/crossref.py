@@ -16,6 +16,27 @@ def _similarity(a: str, b: str) -> float:
     return SequenceMatcher(None, a.lower().strip(), b.lower().strip()).ratio()
 
 
+def first_author_status(authors: list[str] | None, candidate_authors: list[str] | None) -> str:
+    """'match', 'conflict', or 'unknown' (a first-author surname is missing)."""
+    ours = authors[0].split() if authors else []
+    theirs = candidate_authors[0].split() if candidate_authors else []
+    if not ours or not theirs:
+        return "unknown"
+    return "match" if _similarity(ours[-1].lower(), theirs[-1].lower()) >= 0.7 else "conflict"
+
+
+def first_author_conflict(authors: list[str] | None, candidate_authors: list[str] | None) -> bool:
+    """True if both first-author surnames are known and clearly differ."""
+    return first_author_status(authors, candidate_authors) == "conflict"
+
+
+def year_status(year, candidate_year) -> str:
+    """'match', 'conflict', or 'unknown' (a year is missing)."""
+    if not year or not candidate_year:
+        return "unknown"
+    return "match" if str(year) == str(candidate_year) else "conflict"
+
+
 async def _request_with_retry(client: httpx.AsyncClient, url: str, params: dict) -> httpx.Response:
     """Send a GET request with exponential backoff on 429/5xx errors."""
     for attempt in range(MAX_RETRIES):
@@ -116,9 +137,31 @@ async def verify_paper(
     if best_match is None or best_score < 0.3:
         return {"found": False, "match_score": best_score, "discrepancies": ["No good match found"]}
 
+    # Decide whether the closest record is the cited work at all before listing
+    # "discrepancies"; otherwise an unrelated record's metadata is reported as
+    # errors in the reference. Typical cases: the cited paper has no CrossRef
+    # DOI (most NeurIPS/ICLR papers), or the reference does not exist.
+    #  - close title: same work unless year AND first author both conflict
+    #  - weak title:  same work only if year AND first author both agree
+    title_sim = _similarity(title, best_match["title"])
+    years = year_status(year, best_match.get("year"))
+    first_authors = first_author_status(authors, best_match.get("authors"))
+    if title_sim >= 0.85:
+        same_work = not (years == "conflict" and first_authors == "conflict")
+    else:
+        same_work = years == "match" and first_authors == "match"
+    if not same_work:
+        return {
+            "found": False,
+            "match_score": round(best_score, 3),
+            "closest_candidate": best_match,
+            "discrepancies": [
+                "No matching CrossRef record (closest candidate appears to be a different work)"
+            ],
+        }
+
     discrepancies = []
 
-    title_sim = _similarity(title, best_match["title"])
     if title_sim < 0.85:
         discrepancies.append(f"Title mismatch: '{title}' vs CrossRef '{best_match['title']}'")
 
@@ -126,15 +169,16 @@ async def verify_paper(
         discrepancies.append(f"Year: paper says {year}, CrossRef says {best_match['year']}")
 
     if venue and best_match.get("venue"):
+        # Acronyms are usually embedded in the full name, e.g. "CVPR" in
+        # "2016 IEEE Conference on Computer Vision and Pattern Recognition (CVPR)"
+        ours, theirs = venue.lower().strip(), best_match["venue"].lower().strip()
+        venue_contained = ours in theirs or theirs in ours
         venue_sim = _similarity(venue, best_match["venue"])
-        if venue_sim < 0.5:
+        if not venue_contained and venue_sim < 0.5:
             discrepancies.append(f"Venue: paper says '{venue}', CrossRef says '{best_match['venue']}'")
 
-    if authors and best_match.get("authors"):
-        paper_first = authors[0].split()[-1].lower() if authors else ""
-        cr_first = best_match["authors"][0].split()[-1].lower() if best_match["authors"] else ""
-        if paper_first and cr_first and _similarity(paper_first, cr_first) < 0.7:
-            discrepancies.append(f"First author: paper says '{authors[0]}', CrossRef says '{best_match['authors'][0]}'")
+    if first_author_conflict(authors, best_match.get("authors")):
+        discrepancies.append(f"First author: paper says '{authors[0]}', CrossRef says '{best_match['authors'][0]}'")
 
     return {
         "found": True,
